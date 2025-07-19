@@ -18,7 +18,7 @@ if "logged_in" not in st.session_state:
 
 st.set_page_config(page_title="PWS's Life Cafe", layout="wide")
 
-# --- ข้อมูลเมนู ---
+# -------------------- ข้อมูลเมนู --------------------
 menu = {
     "กาแฟ": {
         "ร้อน": {
@@ -86,15 +86,15 @@ menu = {
     }
 }
 
+# -------------------- ตัวแปรสถานะ --------------------
 if "orders" not in st.session_state:
     st.session_state.orders = []
-
 if "sales" not in st.session_state:
     st.session_state.sales = []
 
 st.title("☕ ระบบแคชเชียร์ - PWS's LIFE CAFE")
 
-# --- สั่งออเดอร์ ---
+# -------------------- หน้า: สั่งออเดอร์ --------------------
 st.header("🧾 สั่งออเดอร์")
 with st.form("order_form"):
     col1, col2 = st.columns([2, 1])
@@ -140,21 +140,30 @@ with st.form("order_form"):
             st.success("บันทึกออเดอร์เรียบร้อยแล้ว!")
             st.rerun()
 
-# --- ติดตามออเดอร์ ---
+# -------------------- หน้า: ติดตามสถานะออเดอร์ --------------------
 st.header("📋 ติดตามสถานะออเดอร์")
+to_delete = []
 for i, order in enumerate(st.session_state.orders):
     with st.expander(f"{order['ชื่อผู้รับ']} | {order['เวลา']} | {order['สถานะ']}"):
         for item, price, qty in order['รายการ']:
             st.write(f"{item} x{qty} = {price * qty} ฿")
         st.write(f"ยอดรวม: {order['ยอดรวม']} ฿")
-        if st.button("✅ เสร็จแล้ว", key=f"done_{i}"):
-            st.session_state.orders[i]['สถานะ'] = "เสร็จแล้ว"
-            st.rerun()
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            if st.button("✅ เสร็จแล้ว", key=f"done_{i}"):
+                st.session_state.orders[i]['สถานะ'] = "เสร็จแล้ว"
+                st.rerun()
+        with col2:
+            if st.button("🗑️ ลบออเดอร์", key=f"delete_{i}"):
+                to_delete.append(i)
 
-# --- สรุปยอดขาย ---
+# ลบออเดอร์
+for idx in sorted(to_delete, reverse=True):
+    st.session_state.orders.pop(idx)
+
+# -------------------- หน้า: รายงานยอดขาย --------------------
 st.header("📈 รายงานยอดขาย")
 if st.button("ดูยอดขายย้อนหลัง"):
-    df = pd.DataFrame(st.session_state.sales)
     total_income = sum(order['ยอดรวม'] for order in st.session_state.sales)
     total_cups = sum(qty for order in st.session_state.sales for _, _, qty in order['รายการ'])
     st.metric("รายได้รวม", f"{total_income} ฿")
@@ -165,3 +174,4 @@ if st.button("ดูยอดขายย้อนหลัง"):
             for item, price, qty in order['รายการ']:
                 st.write(f"{item} x{qty} = {price * qty} ฿")
             st.write(f"ยอดรวม: {order['ยอดรวม']} ฿ | จ่าย: {order['จ่าย']} ฿ | ทอน: {order['ทอน']} ฿")
+
