@@ -1,3 +1,4 @@
+
 import streamlit as st
 from datetime import datetime
 import uuid
@@ -54,7 +55,7 @@ menu = {
     },
 }
 
-# -------------------- State --------------------
+# -------------------- ตัวแปรสถานะ --------------------
 if "order_items" not in st.session_state:
     st.session_state.order_items = []
     st.session_state.orders = []
@@ -114,4 +115,32 @@ with menu_tab:
                 }
                 st.session_state.orders.append(order)
                 st.session_state.sales[pay_method] += total
-                st.session_state.cups += sum(i
+                st.session_state.cups += sum(i['qty'] for i in st.session_state.order_items)
+                st.session_state.order_items.clear()
+                st.success("บันทึกออเดอร์เรียบร้อยแล้ว")
+
+        with col2:
+            if st.button("🗑️ ยกเลิกออเดอร์"):
+                st.session_state.order_items.clear()
+                st.warning("ยกเลิกรายการแล้ว")
+
+# -------------------- Tab: ออเดอร์ย้อนหลัง --------------------
+with order_tab:
+    st.subheader("📦 ติดตามสถานะออเดอร์")
+    if st.session_state.orders:
+        for i, order in enumerate(st.session_state.orders[::-1]):
+            with st.expander(f"{order['name']} | {order['total']}฿ | {order['time']} | สถานะ: {order['status']}"):
+                for item in order['items']:
+                    st.write(f"- {item['name']} x {item['qty']} = {item['price'] * item['qty']} บาท")
+                if st.button("🔁 เปลี่ยนสถานะเป็นเสร็จแล้ว" if order['status'] == "ยังไม่เสร็จ" else "🔄 เปลี่ยนสถานะเป็นยังไม่เสร็จ", key=f"toggle_{order['id']}"):
+                    order['status'] = "เสร็จแล้ว" if order['status'] == "ยังไม่เสร็จ" else "ยังไม่เสร็จ"
+    else:
+        st.info("ยังไม่มีออเดอร์")
+
+# -------------------- Tab: ยอดขายรวม --------------------
+with sales_tab:
+    st.subheader("📈 รายงานยอดขาย")
+    st.metric("ยอดขายสด", f"{st.session_state.sales['สด']} บาท")
+    st.metric("ยอดขายโอน", f"{st.session_state.sales['โอน']} บาท")
+    st.metric("ยอดขายรวม", f"{st.session_state.sales['สด'] + st.session_state.sales['โอน']} บาท")
+    st.metric("จำนวนแก้วทั้งหมด", f"{st.session_state.cups} แก้ว")
