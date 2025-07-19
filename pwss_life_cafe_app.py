@@ -18,7 +18,7 @@ if "logged_in" not in st.session_state:
 
 st.set_page_config(page_title="ระบบแคชเชียร์ร้านกาแฟ", layout="wide")
 
-# ข้อมูลเมนูหลักและย่อย
+# ข้อมูลเมนู
 menu_data = {
     "กาแฟ": {
         "ร้อน": {
@@ -77,16 +77,14 @@ menu_data = {
 # ตัวแปร session state
 if 'orders' not in st.session_state:
     st.session_state.orders = []
-if 'current_order' not in st.session_state:
-    st.session_state.current_order = []
 if 'selected_category' not in st.session_state:
     st.session_state.selected_category = None
 if 'selected_subcategory' not in st.session_state:
     st.session_state.selected_subcategory = None
 
-# ===== ส่วนการเลือกหมวดหมู่หลัก =====
 st.title("☕ ระบบแคชเชียร์ร้านกาแฟ")
 
+# หน้าหมวดหลัก
 st.subheader("เลือกหมวดหมู่หลัก")
 cols = st.columns(len(menu_data))
 for i, category in enumerate(menu_data.keys()):
@@ -94,8 +92,10 @@ for i, category in enumerate(menu_data.keys()):
         st.session_state.selected_category = category
         st.session_state.selected_subcategory = None
 
-# ===== ส่วนการเลือกหมวดย่อย =====
 category = st.session_state.selected_category
+subcategory = st.session_state.selected_subcategory
+
+# หมวดหมู่ย่อย
 if category:
     st.divider()
     st.subheader(f"📂 หมวดย่อยในหมวด {category}")
@@ -105,12 +105,12 @@ if category:
         if cols[i].button(subcat):
             st.session_state.selected_subcategory = subcat
 
-# ===== แสดงเมนูของหมวดย่อยที่เลือก =====
-subcategory = st.session_state.selected_subcategory
+# แสดงเมนูในหมวดย่อย
 if category and subcategory:
     st.divider()
     st.subheader(f"🍽 เมนู: {category} > {subcategory}")
     menu_items = menu_data[category][subcategory]
+
     with st.form("order_form", clear_on_submit=False):
         quantities = {}
         for item, price in menu_items.items():
@@ -122,31 +122,33 @@ if category and subcategory:
                 quantities[item] = (price, qty)
 
         customer_name = st.text_input("🧍‍♂️ ชื่อลูกค้า/ผู้รับ", key="customer_name")
+        total = sum(price * qty for price, qty in quantities.values())
+        st.info(f"💰 ยอดรวม: {total} บาท")
+        paid = st.number_input("💵 เงินที่รับมา", min_value=0, value=0, step=1, key="paid_amount")
+        change = paid - total if paid >= total else 0
+        st.success(f"💸 เงินทอน: {change} บาท")
+
         submitted = st.form_submit_button("✅ ยืนยันออเดอร์")
 
         if submitted:
-            order_items = []
-            total = 0
-            for item, (price, qty) in quantities.items():
-                if qty > 0:
-                    order_items.append((item, price, qty))
-                    total += price * qty
-
+            order_items = [(item, price, qty) for item, (price, qty) in quantities.items() if qty > 0]
             if order_items:
                 order = {
                     "name": customer_name,
                     "items": order_items,
                     "total": total,
+                    "paid": paid,
+                    "change": change,
                     "time": datetime.datetime.now().strftime("%H:%M:%S"),
                     "done": False
                 }
                 st.session_state.orders.append(order)
                 st.success("เพิ่มออเดอร์เรียบร้อยแล้ว")
-                # รีเซ็ตสถานะ
                 st.session_state.selected_category = None
                 st.session_state.selected_subcategory = None
+                st.experimental_rerun()
 
-# ===== รายการออเดอร์ทั้งหมด =====
+# แสดงรายการออเดอร์
 st.divider()
 st.subheader("🧾 รายการออเดอร์ทั้งหมด")
 
@@ -155,20 +157,22 @@ if st.session_state.orders:
         with st.expander(f"🕒 {order['time']} - {order['name']} | ยอด {order['total']} บาท", expanded=False):
             for item, price, qty in order["items"]:
                 st.write(f"{item} - {price} x {qty} = {price * qty} บาท")
+            st.write(f"รวมทั้งหมด: {order['total']} บาท")
+            st.write(f"รับเงินมา: {order['paid']} บาท | ทอน: {order['change']} บาท")
 
-            col1, col2, col3 = st.columns([1, 1, 2])
+            col1, col2 = st.columns([1, 1])
             with col1:
                 if st.button("🗑 ลบ", key=f"del-{i}"):
                     st.session_state.orders.pop(i)
                     st.rerun()
             with col2:
-                if st.button("✅ เสร็จแล้ว" if not order["done"] else "✅ เสร็จแล้ว ✔️", key=f"done-{i}"):
+                if st.button("✅ เสร็จแล้ว" if not order["done"] else "✔️ เสร็จแล้ว", key=f"done-{i}"):
                     st.session_state.orders[i]["done"] = True
                     st.rerun()
 else:
     st.info("ยังไม่มีออเดอร์")
 
-# ===== รายงานยอดขายรวม =====
+# รายงานยอดขาย
 st.divider()
 if st.button("📊 ดูรายงานยอดขาย"):
     total_cash = 0
@@ -177,5 +181,3 @@ if st.button("📊 ดูรายงานยอดขาย"):
         total_cash += order['total']
         total_cups += sum(qty for _, _, qty in order['items'])
     st.success(f"ยอดขายรวม: {total_cash} บาท | จำนวนแก้ว: {total_cups} แก้ว")
-
-
