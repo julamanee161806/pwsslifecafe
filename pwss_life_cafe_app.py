@@ -104,16 +104,17 @@ with st.form("order_form"):
             st.subheader(cat)
             if isinstance(items, dict):
                 for subcat, subitems in items.items():
-                    st.markdown(f"**{subcat}**")
-                    for item, price in subitems.items():
-                        qty = st.number_input(f"{item} ({price}฿)", min_value=0, step=1, key=f"{cat}_{subcat}_{item}")
+                    if isinstance(subitems, dict):
+                        st.markdown(f"**{subcat}**")
+                        for item, price in subitems.items():
+                            qty = st.number_input(f"{item} ({price}฿)", min_value=0, step=1, key=f"{cat}_{subcat}_{item}")
+                            if qty > 0:
+                                selections.append((item, price, qty))
+                    else:
+                        item, price = subcat, subitems
+                        qty = st.number_input(f"{item} ({price}฿)", min_value=0, step=1, key=f"{cat}_{item}")
                         if qty > 0:
                             selections.append((item, price, qty))
-            else:
-                for item, price in items.items():
-                    qty = st.number_input(f"{item} ({price}฿)", min_value=0, step=1, key=f"{cat}_{item}")
-                    if qty > 0:
-                        selections.append((item, price, qty))
 
     with col2:
         customer_name = st.text_input("ชื่อผู้รับ")
@@ -140,7 +141,7 @@ with st.form("order_form"):
             st.success("บันทึกออเดอร์เรียบร้อยแล้ว!")
             st.rerun()
 
-# -------------------- หน้า: ติดตามสถานะออเดอร์ --------------------
+# -------------------- ติดตามสถานะ --------------------
 st.header("📋 ติดตามสถานะออเดอร์")
 to_delete = []
 for i, order in enumerate(st.session_state.orders):
@@ -157,11 +158,10 @@ for i, order in enumerate(st.session_state.orders):
             if st.button("🗑️ ลบออเดอร์", key=f"delete_{i}"):
                 to_delete.append(i)
 
-# ลบออเดอร์
 for idx in sorted(to_delete, reverse=True):
     st.session_state.orders.pop(idx)
 
-# -------------------- หน้า: รายงานยอดขาย --------------------
+# -------------------- ยอดขายย้อนหลัง --------------------
 st.header("📈 รายงานยอดขาย")
 if st.button("ดูยอดขายย้อนหลัง"):
     total_income = sum(order['ยอดรวม'] for order in st.session_state.sales)
@@ -174,4 +174,3 @@ if st.button("ดูยอดขายย้อนหลัง"):
             for item, price, qty in order['รายการ']:
                 st.write(f"{item} x{qty} = {price * qty} ฿")
             st.write(f"ยอดรวม: {order['ยอดรวม']} ฿ | จ่าย: {order['จ่าย']} ฿ | ทอน: {order['ทอน']} ฿")
-
