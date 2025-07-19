@@ -16,161 +16,166 @@ if "logged_in" not in st.session_state:
     login()
     st.stop()
 
-st.set_page_config(page_title="PWS's Life Cafe", layout="wide")
+st.set_page_config(page_title="ระบบแคชเชียร์ร้านกาแฟ", layout="wide")
 
-# -------------------- ข้อมูลเมนู --------------------
-menu = {
+# ข้อมูลเมนูหลักและย่อย
+menu_data = {
     "กาแฟ": {
         "ร้อน": {
             "เอสเพรสโซ่": 30,
             "อเมริกาโน่": 30,
-            "คาปูชิโน่": 35,
             "ลาเต้": 35,
-            "มอคค่า": 40,
-            "คาราเมล": 40,
-            "ช็อกโกโก้ลาเต้": 30
+            "คาปูชิโน่": 35,
+            "มอคค่า": 35
         },
         "เย็น": {
-            "อเมริกาโน่": 35,
-            "คาปูชิโน่": 40,
-            "ลาเต้": 40,
-            "มอคค่า": 45,
-            "คาราเมล": 45,
-            "อเมริกาโน่ส้ม": 50,
-            "อเมริกาโน่น้ำผึ้ง": 50,
-            "Blue Sky Coffee": 40,
-            "กาแฟมะพร้าว": 50,
-            "ช็อกโกโก้ลาเต้": 40
+            "เอสเพรสโซ่": 40,
+            "อเมริกาโน่": 40,
+            "ลาเต้": 45,
+            "คาปูชิโน่": 45,
+            "มอคค่า": 45
         },
         "ปั่น": {
-            "อเมริกาโน่": 40,
-            "คาปูชิโน่": 45,
-            "ลาเต้": 45,
-            "มอคค่า": 50,
-            "คาราเมล": 50,
-            "กาแฟมะพร้าว": 50,
-            "ช็อกโก": 45
+            "เอสเพรสโซ่": 50,
+            "อเมริกาโน่": 50,
+            "ลาเต้": 55,
+            "คาปูชิโน่": 55,
+            "มอคค่า": 55
         }
     },
     "ชา": {
-        "มัทฉะ ร้อน": 30,
-        "มัทฉะลาเต้": 40,
-        "มัทฉะลาเต้ ปั่น": 45,
-        "ชามะนาว": 35,
-        "ชานม": 40
+        "เมนู": {
+            "ชาเขียว": 40,
+            "ชาไทย": 40,
+            "ชาเย็น": 40
+        }
     },
     "นม": {
-        "นมสดสตอเบอรี่": 40,
-        "นมกล้วย": 40,
-        "นมคาราเมล": 40,
-        "นมเผือก": 40,
-        "นมบลูเบอรี่": 40
+        "เมนู": {
+            "นมสด": 35,
+            "นมชมพู": 35,
+            "ไมโล": 35,
+            "โอวัลติน": 35
+        }
     },
     "โซดา": {
-        "บลูโซดา": 40,
-        "มะนาวโซดา": 35,
-        "น้ำผึ้งมะนาวโซดา": 40,
-        "อิตาเลี่ยนโซดา": 35,
-        "ลิ้นจี่โซดา": 35,
-        "เบอรี่มิ้นต์": 35,
-        "ชาสตอเบอรี่": 35
+        "เมนู": {
+            "บลูฮาวาย": 40,
+            "แดงมะนาวโซดา": 40,
+            "กีวี่โซดา": 40
+        }
     },
     "สมูทตี้": {
-        "Orange Smoothie ส้ม ปั่น": 45,
-        "Lychee Smoothie ลิ้นจี่ ปั่น": 45,
-        "Mango Smoothie มะม่วง ปั่น": 45,
-        "Kiwi Smoothie กีวี่ ปั่น": 45,
-        "Strawberry Smoothie สตอเบอรี่ ปั่น": 45,
-        "Blueberry Smoothie บลูเบอรี่ ปั่น": 45,
-        "Passion Fruit Smoothie เสาวรส ปั่น": 45
+        "เมนู": {
+            "สตรอว์เบอร์รี่": 45,
+            "บลูเบอร์รี่": 45,
+            "มะม่วง": 45
+        }
     }
 }
 
-# -------------------- ตัวแปรสถานะ --------------------
-if "orders" not in st.session_state:
+# ตัวแปร session state
+if 'orders' not in st.session_state:
     st.session_state.orders = []
-if "sales" not in st.session_state:
-    st.session_state.sales = []
+if 'current_order' not in st.session_state:
+    st.session_state.current_order = []
+if 'selected_category' not in st.session_state:
+    st.session_state.selected_category = None
+if 'selected_subcategory' not in st.session_state:
+    st.session_state.selected_subcategory = None
 
-st.title("☕ ระบบแคชเชียร์ - PWS's LIFE CAFE")
+# ===== ส่วนการเลือกหมวดหมู่หลัก =====
+st.title("☕ ระบบแคชเชียร์ร้านกาแฟ")
 
-# -------------------- หน้า: สั่งออเดอร์ --------------------
-st.header("🧾 สั่งออเดอร์")
-with st.form("order_form"):
-    col1, col2 = st.columns([2, 1])
-    selections = []
-    with col1:
-        for cat, items in menu.items():
-            st.subheader(cat)
-            if isinstance(items, dict):
-                for subcat, subitems in items.items():
-                    if isinstance(subitems, dict):
-                        st.markdown(f"**{subcat}**")
-                        for item, price in subitems.items():
-                            qty = st.number_input(f"{item} ({price}฿)", min_value=0, step=1, key=f"{cat}_{subcat}_{item}")
-                            if qty > 0:
-                                selections.append((item, price, qty))
-                    else:
-                        item, price = subcat, subitems
-                        qty = st.number_input(f"{item} ({price}฿)", min_value=0, step=1, key=f"{cat}_{item}")
-                        if qty > 0:
-                            selections.append((item, price, qty))
+st.subheader("เลือกหมวดหมู่หลัก")
+cols = st.columns(len(menu_data))
+for i, category in enumerate(menu_data.keys()):
+    if cols[i].button(category):
+        st.session_state.selected_category = category
+        st.session_state.selected_subcategory = None
 
-    with col2:
-        customer_name = st.text_input("ชื่อผู้รับ")
-        total = sum(price * qty for _, price, qty in selections)
-        st.markdown(f"### ยอดรวม: {total} ฿")
-        paid = st.number_input("ลูกค้าจ่ายมา (บาท)", min_value=0, step=1)
-        change = paid - total if paid >= total else 0
-        st.markdown(f"เงินทอน: {change} ฿")
+# ===== ส่วนการเลือกหมวดย่อย =====
+category = st.session_state.selected_category
+if category:
+    st.divider()
+    st.subheader(f"📂 หมวดย่อยในหมวด {category}")
+    subcategories = menu_data[category].keys()
+    cols = st.columns(len(subcategories))
+    for i, subcat in enumerate(subcategories):
+        if cols[i].button(subcat):
+            st.session_state.selected_subcategory = subcat
 
+# ===== แสดงเมนูของหมวดย่อยที่เลือก =====
+subcategory = st.session_state.selected_subcategory
+if category and subcategory:
+    st.divider()
+    st.subheader(f"🍽 เมนู: {category} > {subcategory}")
+    menu_items = menu_data[category][subcategory]
+    with st.form("order_form", clear_on_submit=False):
+        quantities = {}
+        for item, price in menu_items.items():
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.markdown(f"**{item}** - {price} บาท")
+            with col2:
+                qty = st.number_input(f"จำนวน {item}", min_value=0, key=f"{item}-{category}", step=1)
+                quantities[item] = (price, qty)
+
+        customer_name = st.text_input("🧍‍♂️ ชื่อลูกค้า/ผู้รับ", key="customer_name")
         submitted = st.form_submit_button("✅ ยืนยันออเดอร์")
-        if submitted and selections and customer_name:
-            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            order = {
-                "ชื่อผู้รับ": customer_name,
-                "เวลา": now,
-                "ยอดรวม": total,
-                "จ่าย": paid,
-                "ทอน": change,
-                "สถานะ": "ไม่เสร็จ",
-                "รายการ": selections
-            }
-            st.session_state.orders.append(order)
-            st.session_state.sales.append(order)
-            st.success("บันทึกออเดอร์เรียบร้อยแล้ว!")
-            st.rerun()
 
-# -------------------- ติดตามสถานะ --------------------
-st.header("📋 ติดตามสถานะออเดอร์")
-to_delete = []
-for i, order in enumerate(st.session_state.orders):
-    with st.expander(f"{order['ชื่อผู้รับ']} | {order['เวลา']} | {order['สถานะ']}"):
-        for item, price, qty in order['รายการ']:
-            st.write(f"{item} x{qty} = {price * qty} ฿")
-        st.write(f"ยอดรวม: {order['ยอดรวม']} ฿")
-        col1, col2 = st.columns([1, 1])
-        with col1:
-            if st.button("✅ เสร็จแล้ว", key=f"done_{i}"):
-                st.session_state.orders[i]['สถานะ'] = "เสร็จแล้ว"
-                st.rerun()
-        with col2:
-            if st.button("🗑️ ลบออเดอร์", key=f"delete_{i}"):
-                to_delete.append(i)
+        if submitted:
+            order_items = []
+            total = 0
+            for item, (price, qty) in quantities.items():
+                if qty > 0:
+                    order_items.append((item, price, qty))
+                    total += price * qty
 
-for idx in sorted(to_delete, reverse=True):
-    st.session_state.orders.pop(idx)
+            if order_items:
+                order = {
+                    "name": customer_name,
+                    "items": order_items,
+                    "total": total,
+                    "time": datetime.datetime.now().strftime("%H:%M:%S"),
+                    "done": False
+                }
+                st.session_state.orders.append(order)
+                st.success("เพิ่มออเดอร์เรียบร้อยแล้ว")
+                # รีเซ็ตสถานะ
+                st.session_state.selected_category = None
+                st.session_state.selected_subcategory = None
 
-# -------------------- ยอดขายย้อนหลัง --------------------
-st.header("📈 รายงานยอดขาย")
-if st.button("ดูยอดขายย้อนหลัง"):
-    total_income = sum(order['ยอดรวม'] for order in st.session_state.sales)
-    total_cups = sum(qty for order in st.session_state.sales for _, _, qty in order['รายการ'])
-    st.metric("รายได้รวม", f"{total_income} ฿")
-    st.metric("จำนวนแก้วที่ขาย", f"{total_cups} แก้ว")
+# ===== รายการออเดอร์ทั้งหมด =====
+st.divider()
+st.subheader("🧾 รายการออเดอร์ทั้งหมด")
 
-    for i, order in enumerate(st.session_state.sales):
-        with st.expander(f"{order['ชื่อผู้รับ']} | {order['เวลา']}"):
-            for item, price, qty in order['รายการ']:
-                st.write(f"{item} x{qty} = {price * qty} ฿")
-            st.write(f"ยอดรวม: {order['ยอดรวม']} ฿ | จ่าย: {order['จ่าย']} ฿ | ทอน: {order['ทอน']} ฿")
+if st.session_state.orders:
+    for i, order in enumerate(st.session_state.orders):
+        with st.expander(f"🕒 {order['time']} - {order['name']} | ยอด {order['total']} บาท", expanded=False):
+            for item, price, qty in order["items"]:
+                st.write(f"{item} - {price} x {qty} = {price * qty} บาท")
+
+            col1, col2, col3 = st.columns([1, 1, 2])
+            with col1:
+                if st.button("🗑 ลบ", key=f"del-{i}"):
+                    st.session_state.orders.pop(i)
+                    st.rerun()
+            with col2:
+                if st.button("✅ เสร็จแล้ว" if not order["done"] else "✅ เสร็จแล้ว ✔️", key=f"done-{i}"):
+                    st.session_state.orders[i]["done"] = True
+                    st.rerun()
+else:
+    st.info("ยังไม่มีออเดอร์")
+
+# ===== รายงานยอดขายรวม =====
+st.divider()
+if st.button("📊 ดูรายงานยอดขาย"):
+    total_cash = 0
+    total_cups = 0
+    for order in st.session_state.orders:
+        total_cash += order['total']
+        total_cups += sum(qty for _, _, qty in order['items'])
+    st.success(f"ยอดขายรวม: {total_cash} บาท | จำนวนแก้ว: {total_cups} แก้ว")
+
+
